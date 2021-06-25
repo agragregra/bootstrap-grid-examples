@@ -1,0 +1,74 @@
+@import "vars"
+@import "fonts"
+@import "libs"
+
+::placeholder
+	color: #666
+
+::selection
+	background-color: $accent
+	color: #fff
+
+html, body
+	height: 100%
+
+body
+	font-size: 16px
+	min-width: 320px
+	position: relative
+	line-height: 1.65
+	font-family: $default-font
+	overflow-x: hidden
+	input, textarea
+			border: #666 1px solid
+			outline: none
+			&:focus:required:invalid
+				border-color: red
+			&:required:valid
+				border-color: green
+
+.img-responsive
+	display: block
+	max-width: 100%
+	height: auto
+
+.text-center
+	text-align: center
+
+// Example styles Start
+.example-bs
+	padding: $grid-gutter-width/2
+	min-height: 100vh
+	h3
+		margin-bottom: 20px
+	.row
+		text-align: center
+		> .col, > [class^=col-]
+			padding:
+				top: .75rem
+				bottom: .75rem
+			background-color: $dark
+			border: 1px solid darken($dark, 10%)
+			color: #fff
+	[class^="row align-items-"], &.example-flex .row+.row
+		min-height: 10rem
+		background-color: #a3a8ba
+		margin: $grid-gutter-width/2 0
+	.no-gutters
+		> .col, > [class^=col-]
+			border: none
+			background-color: transparent
+			padding:
+				top: 0
+				bottom: 0
+			div
+				background-color: $dark
+				padding:
+					top: .75rem
+					bottom: .75rem
+			&:nth-child(odd)
+				div
+					background-color: lighten($dark, 10%)
+// Example styles End
+
+@import "media" // Always at the end
