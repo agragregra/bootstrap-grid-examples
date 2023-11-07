@@ -1,15 +1,28 @@
-const { src, dest, parallel, series, watch } = require('gulp'),
-		sass         = require('gulp-sass')(require('sass')),
-		browsersync  = require('browser-sync'),
-		concat       = require('gulp-concat'),
-		uglify       = require('gulp-uglify'),
-		cleancss     = require('gulp-clean-css'),
-		rename       = require('gulp-rename'),
-		autoprefixer = require('gulp-autoprefixer'),
-		notify       = require("gulp-notify"),
-		rsync        = require('gulp-rsync');
+import pkg from 'gulp'
+const { src, dest, parallel, series, watch } = pkg
 
-// Scripts concat & minify
+import browserSync   from 'browser-sync'
+import gulpSass      from 'gulp-sass'
+import * as dartSass from 'sass'
+const  sass          = gulpSass(dartSass)
+import postCss       from 'gulp-postcss'
+import cssnano       from 'cssnano'
+import concat        from 'gulp-concat'
+import uglify        from 'gulp-uglify'
+import autoprefixer  from 'autoprefixer'
+import rsyncModule   from 'gulp-rsync'
+
+function browsersync() {
+	browserSync.init({
+		server: {
+			baseDir: 'app/'
+		},
+		ghostMode: { clicks: false },
+		notify: false,
+		online: true,
+		// tunnel: 'yousutename', // Attempt to use the URL https://yousutename.loca.lt
+	})
+}
 
 function js() {
 	return src([
@@ -19,52 +32,42 @@ function js() {
 	.pipe(concat('scripts.min.js'))
 	// .pipe(uglify()) // Mifify js (opt.)
 	.pipe(dest('app/js'))
-	.pipe(browsersync.reload({ stream: true }))
-};
-
-function browserSync() {
-	browsersync({
-		server: {
-			baseDir: 'app'
-		},
-		notify: false,
-		// tunnel: true,
-		// tunnel: "projectmane", //Demonstration page: http://projectmane.localtunnel.me
-	})
+	.pipe(browserSync.stream())
 };
 
 function styles() {
-	return src('app/sass/**/*.sass')
-	.pipe(sass({ outputStyle: 'expanded' }).on("error", notify.onError()))
-	.pipe(rename({ suffix: '.min', prefix : '' }))
-	.pipe(autoprefixer(['last 15 versions']))
-	.pipe(cleancss( {level: { 1: { specialComments: 0 } } })) // Opt., comment out when debugging
-	.pipe(dest('app/css'))
-	.pipe(browsersync.reload( {stream: true} ))
-};
+	return src(['app/sass/**/*.sass'])
+		.pipe(sass({ 'include css': true }))
+		.pipe(postCss([
+			autoprefixer({ grid: 'autoplace' }),
+			cssnano({ preset: ['default', { discardComments: { removeAll: true } }] })
+		]))
+		.pipe(concat('main.min.css'))
+		.pipe(dest('app/css'))
+		.pipe(browserSync.stream())
+}
 
 function deploy() {
 	return src('app/') // Без звёздочек!
-	.pipe(rsync({
-		root: 'app/',
-		hostname: 'username@yousite.com',
-		destination: 'yousite/public_html/',
-		clean: true, // Mirror copy with file deletion
-		// include: ['*.htaccess'], // Includes files to deploy
-		exclude: ['**/Thumbs.db', '**/*.DS_Store'], // Excludes files from deploy
-		recursive: true,
-		archive: true,
-		silent: false,
-		compress: true
-	}))
-};
-
-function startwatch() {
-	watch('app/sass/**/*.sass', styles);
-	watch(['libs/**/*.js', 'app/js/common.js'], js);
-	watch('app/*.html', browsersync.reload);
+		.pipe(rsyncModule({
+			root: 'app/',
+			hostname: 'username@yousite.com',
+			destination: 'yousite/public_html/',
+			clean: true, // Mirror copy with file deletion
+			// include: ['*.htaccess'], // Includes files to deploy
+			exclude: ['**/Thumbs.db', '**/*.DS_Store'], // Excludes files from deploy
+			recursive: true,
+			archive: true,
+			silent: false,
+			compress: true
+		}))
 }
 
-exports.styles = styles;
-exports.js = js;
-exports.default = parallel(styles, js, browserSync, startwatch);
+function startwatch() {
+	watch(['app/sass/**/*.sass'], { usePolling: true }, styles);
+	watch(['libs/**/*.js', 'app/js/common.js'], { usePolling: true }, js);
+	watch(['app/*.html'], { usePolling: true }).on('change', browserSync.reload)
+}
+
+export { styles, js }
+export default series(styles, js, parallel(browsersync, startwatch))
