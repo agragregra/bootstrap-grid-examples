@@ -69,5 +69,5 @@ function startwatch() {
 	watch(['app/*.html'], { usePolling: true }).on('change', browserSync.reload)
 }
 
-export { styles, js }
+export { styles, js, deploy }
 export default series(styles, js, parallel(browsersync, startwatch))
